@@ -40,7 +40,7 @@
 int main(void)
 {    
 	timer_init();
-	
+	adc_init();
 	// enable interrupts
 	sei();
 	

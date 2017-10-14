@@ -55,10 +55,10 @@ void timer_init()
   // Mode: CTC top=OCR2A
   // OC2A output: Disconnected
   // OC2B output: Disconnected
-  // Timer Period: 1 ms
-  ASSR=(0<<EXCLK) | (0<<AS2);
+  // Timer Period: 100usec
+  ASSR= (0<<EXCLK) | (0<<AS2);
   TCCR2A=(0<<COM2A1) | (0<<COM2A0) | (0<<COM2B1) | (0<<COM2B0) | (1<<WGM21) | (0<<WGM20);
-  TCCR2B=(0<<WGM22) | (1<<CS22) | (0<<CS21) | (0<<CS20);
+  TCCR2B=(0<<WGM22) | (0<<CS22) | (1<<CS21) | (1<<CS20); //Set prescalar to 32
   TCNT2=0x00;
   OCR2A=0x31;
   OCR2B=0x00;
