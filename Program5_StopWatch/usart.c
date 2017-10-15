@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <avr/interrupt.h>
+
 //------------------------------------------------------------------------------
 //      __   ___  ___         ___  __
 //     |  \ |__  |__  | |\ | |__  /__`
@@ -57,10 +58,12 @@ int usart_print (uint8_t *string)
 	
 	if (!busy) {
 	uint8_t *mystring = uartstring;
+	
 	// Copy string uartstring. We will print with uartstring, and the main user can update while we are printing
 	while (*mystring++ = *string++);
 	
 	current_byte = 0;
+	
 	// Check if busy
 	UDR0 = uartstring[current_byte];
 	

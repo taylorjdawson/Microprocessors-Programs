@@ -1,12 +1,20 @@
 #include <avr/io.h>
+#include <avr/interrupt.h>
+#include <stdint.h>
+#include <stdio.h>
 #include "timer.h"
+#include "seven_seg_ctrl.h"
+#include "adc.h"
+#include "usart.h"
+#include "tlc5928.h"
 //-----------------------------------------------------------------------------
 //      __   ___  ___         ___  __
 //     |  \ |__  |__  | |\ | |__  /__`
 //     |__/ |___ |    | | \| |___ .__/
 //
 //-----------------------------------------------------------------------------
-
+#define UPDATE_SEVEN_SEG (5)
+#define MAX_STRING_SIZE (255)
 //-----------------------------------------------------------------------------
 //     ___      __   ___  __   ___  ___  __
 //      |  \ / |__) |__  |  \ |__  |__  /__`
@@ -20,7 +28,7 @@
 //      \/  /~~\ |  \ | /~~\ |__) |___ |___ .__/
 //
 //-----------------------------------------------------------------------------
-
+volatile static uint8_t count = 0;
 //-----------------------------------------------------------------------------
 //      __   __   __  ___  __  ___      __   ___  __
 //     |__) |__) /  \  |  /  \  |  \ / |__) |__  /__`
@@ -38,17 +46,54 @@
 //=============================================================================
 
 int main(void)
-{    
+{   
+	char mystring[MAX_STRING_SIZE];
 	timer_init();
-	adc_init();
+	tlc5928_init();
+	//adc_init();
+	usart_init();
 	// enable interrupts
 	sei();
 	
-    /* Replace with your application code */
+enum TIMERS
+	{
+		SEVEN_SEG,
+		TIMER_B,
+		TIMER_C,
+		TIMER_D,
+		NUM_TIMERS
+	};
+	
+	uint64_t current_time;
+	uint64_t delta;
+	uint64_t event_time[NUM_TIMERS];
+
+	// Initialize timers
+	current_time = timer_get();
+	for (int i = 0; i < NUM_TIMERS; i++)
+	{
+		event_time[i] = current_time;
+	}
+	//snprintf(mystring, sizeof(mystring), "Delta %s ", "Hit");	
+	//usart_print(mystring);
     while (1) 
     {
-		if (timer_get() > 1000000) {
-			
+		current_time = timer_get();
+		
+		// Check SEVEN_SEG timer
+		delta = current_time - event_time[SEVEN_SEG];
+		if (delta >= UPDATE_SEVEN_SEG)
+		{
+			seven_seg_write(count);
+			event_time[SEVEN_SEG] = current_time;
+		}
+		
+		// Check TIMER_B
+		delta = current_time - event_time[TIMER_B];
+		if (delta >= 1000) 
+		{
+			count++;
+			event_time[TIMER_B] = current_time;
 		}
     }
 }
@@ -64,6 +109,5 @@ int main(void)
 //        __   __   __
 //     | /__` |__) /__`
 //     | .__/ |  \ .__/
-//          
+//
 //-----------------------------------------------------------------------------
-
