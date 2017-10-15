@@ -4,12 +4,9 @@
 //     | | \| \__, |___ \__/ |__/ |___ .__/
 //
 //------------------------------------------------------------------------------
+
+#include "pwm.h"
 #include <avr/io.h>
-#include <util/atomic.h>
-#include <avr/interrupt.h>
-#include "tlc5928.h"
-#include "seven_seg_ctrl.h"
-#include <stdio.h>
 //------------------------------------------------------------------------------
 //      __   ___  ___         ___  __
 //     |  \ |__  |__  | |\ | |__  /__`
@@ -30,15 +27,14 @@
 //      \/  /~~\ |  \ | /~~\ |__) |___ |___ .__/
 //
 //------------------------------------------------------------------------------
-volatile static uint8_t seq = 0;
+
 //------------------------------------------------------------------------------
 //      __   __   __  ___  __  ___      __   ___  __
 //     |__) |__) /  \  |  /  \  |  \ / |__) |__  /__`
 //     |    |  \ \__/  |  \__/  |   |  |    |___ .__/
 //
 //------------------------------------------------------------------------------
-void seven_seg_write(uint32_t number);
-static uint8_t bcd_converter(uint8_t digit);
+
 //------------------------------------------------------------------------------
 //      __        __          __
 //     |__) |  | |__) |    | /  `
@@ -47,53 +43,24 @@ static uint8_t bcd_converter(uint8_t digit);
 //------------------------------------------------------------------------------
 
 //==============================================================================
-
-void seven_seg_write(uint32_t number)
+void pwm_init()
 {
-	switch(seq++)
-	{
-		case 0 : tlc5928_write(0x0, bcd_converter( (number / (int) pow(10, 0)) % 10)); DDRC = 0b00110000; break;
-		case 1 : break; //pause do nothing
-		case 2 : DDRC = 0x00; break; // Turn off
-		case 3 : tlc5928_write(0x0, bcd_converter( (number / (int) pow(10, 1)) % 10)); DDRC = 0b00101000; break;
-		case 4 : break; //pause do nothing
-		case 5 : DDRC = 0x00; break; // Turn off
-		case 6 : tlc5928_write(0x0, bcd_converter( (number / (int) pow(10, 2)) % 10) | 0x80 ); DDRC = 0b00100100; break;
-		case 7 : break; //pause do nothing
-		case 8 : DDRC = 0x00; break; // Turn off
-		case 9 : tlc5928_write(0x0, bcd_converter( (number / (int) pow(10, 3)) % 10)); DDRC = 0b00100010; break;
-		case 10: break; //pause do nothing
-		case 11: DDRC = 0x00; seq = 0; break; // Turn off and reset sequence
-		default: DDRC = 0x00; break;
-	}
+	// Timer 0
+	TCCR0A |= _BV(COM0A1) | _BV(COM0B1) | _BV(WGM01) | _BV(WGM00);
+	TCCR0B |= _BV(CS00);
+	
+	//Settings for 8-bit Fast PWM mode Timer 1
+	TCCR1A |= _BV(COM1A1) | _BV(WGM10);
+	TCCR1B |= _BV(CS10) | _BV(WGM12);
 }
+
 //------------------------------------------------------------------------------
 //      __   __              ___  ___
 //     |__) |__) | \  /  /\   |  |__
 //     |    |  \ |  \/  /~~\  |  |___
 //
 //------------------------------------------------------------------------------
-static uint8_t bcd_converter(uint8_t digit) {
-	switch (digit)
-	{
-		case 0x00:  return 0x3F; break;
-		case 0x01:  return 0x06; break;
-		case 0x02:  return 0x5B; break;
-		case 0x03:  return 0x4F; break;
-		case 0x04:  return 0x66; break;
-		case 0x05:  return 0x6D; break;
-		case 0x06:  return 0x7D; break;
-		case 0x07:  return 0x07; break;
-		case 0x08:  return 0x7F; break;
-		case 0x09:  return 0x6F; break;
-		case 0x0A:  return 0x77; break;
-		case 0x0B:  return 0x7C; break;
-		case 0x0C:  return 0x39; break;
-		case 0x0D:  return 0x5E; break;
-		case 0x0E:  return 0x79; break;
-		case 0x0F:  return 0x71; break;
-	}
-}
+
 //------------------------------------------------------------------------------
 //      __                  __        __        __
 //     /  `  /\  |    |    |__)  /\  /  ` |__/ /__`

@@ -143,7 +143,31 @@
     <Compile Include="adc.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="buttons.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="buttons.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="led.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="led.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="led_fade_ctrl.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="led_fade_ctrl.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="pwm.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="pwm.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="seven_seg_ctrl.c">
