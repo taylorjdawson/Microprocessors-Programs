@@ -39,6 +39,7 @@
 volatile static uint32_t stop_watch_time = 0;
 volatile static uint16_t adc_val = 0;
 
+volatile static uint8_t timer_state = RUNNING;
 enum DISPLAY_TIMES
 	{
 		MAIN,
@@ -87,15 +88,22 @@ enum TIMERS
 		LIGHT_FADE,
 		STOP_WATCH,
 		BUTTONS,
+		LAP_TIME,
 		NUM_TIMERS
 	};
 	
-	uint8_t timer_state = RESET;
+	bool button[2] = {false,false};
+	bool old_button[2] = {false, false};
+	uint8_t i;
 	uint64_t current_time;
 	uint64_t delta;
 	uint64_t event_time[NUM_TIMERS];
-
 	uint64_t display;
+	uint64_t previous_time = 0;
+	
+
+	uint8_t display_state;
+	uint8_t lap_time_hold;
 	// Initialize timers
 	current_time = timer_get();
 	for (int i = 0; i < NUM_TIMERS; i++)
@@ -114,9 +122,23 @@ enum TIMERS
 		ADCSRA |= 1<<ADSC;
 		
 		// The current seven segment display states: Main Timer, Lap 1, 2, or 3
-		uint8_t display_state = (int) adc_val / 256;
+		 display_state = (int) adc_val / 256;
 		
 		current_time = timer_get();
+		
+		// Hold lap time for 2 seconds
+		if (lap_time_hold)
+		{
+			delta = current_time - event_time[LAP_TIME];
+			if (delta >= 20000)
+			{
+				lap_time_hold = 0;
+				event_time[LAP_TIME] = current_time;
+			}
+			else {
+				display_state = LAP_0;
+			}
+		}
 		
 		// Check SEVEN_SEG timer
 		delta = current_time - event_time[SEVEN_SEG];
@@ -135,7 +157,7 @@ enum TIMERS
 		}
 		
 		// Check BUTTONS timer
-		delta = current_time - event_time[BUTTONS];
+		/*delta = current_time - event_time[BUTTONS];
 		if (delta >= 500)
 		{	
 			//Concatenate the output of these two function forming a 2 bit value.
@@ -144,10 +166,15 @@ enum TIMERS
 				case 0b00: // No buttons pressed
 					break;
 				case 0b01: // PB1 pressed, lap time
-					display_time[LAP_2] = display_time[LAP_1];
-					display_time[LAP_1] = display_time[LAP_0];
-					display_time[LAP_0] += 1;				
-
+					if (timer_state == RUNNING){
+						uint64_t main_timer = display_time[MAIN];
+						
+						//display_time[LAP_2] = display_time[LAP_1];
+						//display_time[LAP_1] = display_time[LAP_0];
+						display_time[LAP_0] =  main_timer - previous_time;
+						previous_time = display_time[MAIN];
+						lap_time_hold = 1;
+					}
 					break;
 				case 0b10: // PB0 pressed, so start if stopped and stop if started.
 						timer_state = (timer_state == RUNNING) ? STOPPED : RUNNING;		
@@ -159,13 +186,48 @@ enum TIMERS
 			}
 
 			event_time[BUTTONS] = current_time;
+		}*/
+		
+		// See if the buttons have been pressed
+		for (i = 0; i < 2; i++)
+		{
+			button[i] = buttons_get_debounce(i, current_time / 10);
+			// Just look for the falling edge
+			if ((true == button[i]) && (false == old_button[i]))
+			{
+				switch((button[0]<< 1) |(button[1]))
+					{
+						case 0b00: // No buttons pressed
+							break;
+						case 0b01: // PB1 pressed, lap time
+							if (timer_state == RUNNING){
+								
+								uint64_t main_timer = display_time[MAIN];
+								display_time[LAP_2] = display_time[LAP_1];
+								display_time[LAP_1] = display_time[LAP_0];
+								display_time[LAP_0] =  main_timer - previous_time;
+								previous_time = display_time[MAIN];
+								lap_time_hold = 1;
+							}
+							break;
+						case 0b10: // PB0 pressed, so start if stopped and stop if started.
+								timer_state = (timer_state == RUNNING) ? STOPPED : RUNNING;		
+							break;
+						case 0b11: // PB0 & PB1 pressed, so reset
+							zero_out_times ();
+							timer_state = STOPPED;
+							break;
+					}
+			} 
+			// Save the button val
+			old_button[i] = button[i];
 		}
 		
 		// Check STOP_WATCH timer
 		delta = current_time - event_time[STOP_WATCH];
 		if (delta >= 100) 
 		{
-			display_time[MAIN] += timer_state != STOPPED? 1 : 0;
+			display_time[MAIN] += timer_state;
 			event_time[STOP_WATCH] = current_time;
 		}
 		
@@ -196,4 +258,16 @@ ISR(ADC_vect)
 {
 	adc_val = ADC;			// Output ADCH to PortD
 	ADCSRA |= 1<<ADSC;		// Start Conversion
+}
+
+ISR(USART_RX_vect)
+{
+	uint8_t usart_data = usart_read();
+	
+	switch(usart_data)
+	{
+		case 's': timer_state = (timer_state == RUNNING) ? STOPPED : RUNNING; break;
+		case 'l': break;
+	}
+
 }
