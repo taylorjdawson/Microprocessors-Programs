@@ -176,6 +176,12 @@
     <Compile Include="seven_seg_ctrl.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="switch.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="switch.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="timer.c">
       <SubType>compile</SubType>
     </Compile>

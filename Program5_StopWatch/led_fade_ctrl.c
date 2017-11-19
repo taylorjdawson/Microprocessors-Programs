@@ -20,6 +20,7 @@
 #define YELLOW (1)
 #define GREEN (2)
 #define CYAN (3)
+#define LIGHTS_OUT (4)
 #define COMPLETE (0);
 #define INCOMPLETE (1);
 //------------------------------------------------------------------------------
@@ -67,22 +68,27 @@ void light_fader_init()
 //==============================================================================
 void light_fader(uint8_t next_state)
 {
+	
 	if (next_state != current_state && !transistion) {
 		transistion = INCOMPLETE;
 		dir = next_state > current_state;
 	}
+	
 	if (transistion)
 	{
 			switch(current_state)
 			{
 				case RED:
+					OCR0B = OCR0B? OCR0B: 0xF0;
 					if(!in_green()) {
 						current_state = YELLOW;
 						transistion = COMPLETE;
 					}
 					break;
 				case YELLOW:
+					
 					if(!dir) {
+						OCR0A = OCR0A? OCR0A : 0xF0;
 						if(!out_green()) {
 							current_state = RED;
 							OCR0A = 0x00; // Turn off Green LED
@@ -101,7 +107,6 @@ void light_fader(uint8_t next_state)
 					if(!dir) {
 						if(!in_red()) {
 							current_state = YELLOW;
-
 							transistion = COMPLETE;
 						}
 					}
@@ -113,6 +118,7 @@ void light_fader(uint8_t next_state)
 					}
 					break;
 				case CYAN:
+					OCR1AL = OCR1AL? OCR1AL : 0xF0;
 					if(!out_blue()) {
 						current_state = GREEN; 
 						OCR1AL = 0x00; //Turn off Blue LED
